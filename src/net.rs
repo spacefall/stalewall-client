@@ -1,4 +1,3 @@
-//use online::check;
 use ping::ping;
 use reqwest::*;
 use serde::Deserialize;
@@ -14,10 +13,32 @@ pub struct Stalewall {
 }
 
 pub fn get_image(path: &String) {
-    let api = blocking::get("https://stalewall.vercel.app/api").unwrap();
-    let json: Stalewall = api.json().unwrap();
-    let mut file = File::create(path).unwrap();
-    blocking::get(json.url).unwrap().copy_to(&mut file).unwrap();
+    // Gets the data from "https://stalewall.vercel.app/api"
+    let api = blocking::get("https://stalewall.vercel.app/api");
+    match api {
+        Ok(res) => {
+            let info: Result<Stalewall> = res.json();
+            match info {
+                Ok(j) => {
+                    // Creates the image file
+                    let mut file = File::create(path).unwrap();
+                    // Writes the image to file
+                    blocking::get(j.url).unwrap().copy_to(&mut file).unwrap();
+                }
+                Err(e) => {
+                    println!(
+                        "The response from the api wasn't a json.\nThis is probably a server bug and you should report it at {}\n\nError follows:\n{}",
+                        "https://github.com/spacefall/stalewall-api/issues",
+                        e
+                    );
+                }
+            }
+        }
+        Err(e) => {
+            println!("Something happened while getting a response from the api, check your connection and retry.\n\nError follows:\n{}", e);
+            exit(1);
+        }
+    }
 }
 
 pub fn check_network(timeout: Duration) {
@@ -25,11 +46,11 @@ pub fn check_network(timeout: Duration) {
     let pingaddr: IpAddr = "34.107.221.82".parse().unwrap();
     let pinger = ping(pingaddr, Some(timeout), Some(112), None, None, None);
 
-    // Basic error handling, if it doesn't error it just prints connected otherwise print not connected, the error and exit with code 1
+    // Basic error handling to check if the pc is connected to the internet
     match pinger {
         Ok(_) => println!("Connected to the internet"),
         Err(e) => {
-            println!("Not connected to the internet, error follows:\n{}", e);
+            println!("Not connected to the internet\n\nError follows:\n{}", e);
             exit(1);
         }
     }

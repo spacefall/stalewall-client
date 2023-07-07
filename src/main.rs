@@ -1,8 +1,3 @@
-//use std::env;
-
-//#[cfg(windows)]
-//mod windows;
-
 mod net;
 
 use futures::executor::block_on;
@@ -14,36 +9,39 @@ use windows::{
 };
 
 fn main() {
-    // Consts
+    // Network check timeout
     const TIMEOUT: Duration = Duration::new(5, 0);
 
-    // check network
+    // Checks if pc is connected to the internet
     println!(
         "Checking for connection to the internet, timeout: {}s",
         TIMEOUT.as_secs(),
     );
     net::check_network(TIMEOUT);
 
-    // setup tempdir path
+    // Gets path to %temp%/stalewall_currentwall.jpg
     let wallpath: String = env::temp_dir()
-        .join("stalewall.jpg")
+        .join("stalewall_currentwall.jpg")
         .into_os_string()
         .into_string()
         .unwrap();
-    // print path
     println!("Image path: {}", wallpath);
-    // download image
+
+    // Starts image download
     println!("Downloading image");
     net::get_image(&wallpath);
-    // set desktop background
+    println!("Image downloaded");
+
+    // Applies wallpaper
+    // To desktop
     println!("Applying desktop wallpaper");
     wallpaper::set_from_path(&wallpath).unwrap();
-    // set lockscreen wallpaper
+    // To Lockscreen
+    println!("Applying lockscreen wallpaper");
     block_on(set_lockscreen(wallpath)).unwrap();
 }
 
 async fn set_lockscreen(path: String) -> Result<()> {
-    println!("Applying lockscreen wallpaper");
     let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path))?.await?;
     let stream = file.OpenAsync(FileAccessMode::Read)?.await?;
     windows::System::UserProfile::LockScreen::SetImageStreamAsync(&stream)?.await?;

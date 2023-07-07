@@ -1,5 +1,6 @@
 mod net;
 
+use clap::Parser;
 use futures::executor::block_on;
 use std::{env, time::Duration};
 use wallpaper;
@@ -8,7 +9,20 @@ use windows::{
     Storage::{FileAccessMode, StorageFile},
 };
 
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// String of queries to relay to the api (will be simplifed in the future)
+    #[arg(short, long)]
+    queries: Option<String>,
+}
 fn main() {
+    let args = Args::parse();
+    if args.queries.is_some() {
+        println!("Queries: {:?}", args.queries.clone().unwrap());
+    }
+
     // Network check timeout
     const TIMEOUT: Duration = Duration::new(5, 0);
 
@@ -29,7 +43,7 @@ fn main() {
 
     // Starts image download
     println!("Downloading image");
-    net::get_image(&wallpath);
+    net::get_image(&wallpath, args.queries);
     println!("Image downloaded");
 
     // Applies wallpaper

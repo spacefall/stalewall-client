@@ -6,23 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ping = "0.4"
 futures = "0.3"
-#online = "4.0"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
+wallpaper = "3.2"
 serde = { version = "1", features = ["derive"] }
-wallpaper = "3.2.0"
-ping = "0.4.1"
-
-[dependencies.windows]
-version = "0.44"
-features = [
-    "System_UserProfile",
-    "Foundation",
-    "Storage",
-    "Storage_Streams",
-]
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+windows = { version = "0.48", features = ["System_UserProfile", "Foundation", "Storage", "Storage_Streams"] }
+clap = { version = "4.3.11", features = ["derive"] }
 
 [profile.release]
 strip = true
 lto = true
 codegen-units = 1
+opt-level = 3

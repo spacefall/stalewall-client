@@ -12,9 +12,16 @@ pub struct Stalewall {
     pub url: String,
 }
 
-pub fn get_image(path: &String) {
+pub fn get_image(path: &String, queries: Option<String>) {
+    // Temp if for queries, I'll put more options later so writing the queries manually isn't needed but for now (testing), it's good enough
+    let url: String = if queries.is_some() {
+        "https://stalewall.vercel.app/api".to_owned() + &queries.unwrap()
+    } else {
+        "https://stalewall.vercel.app/api".to_owned()
+    };
+
     // Gets the data from "https://stalewall.vercel.app/api"
-    let api = blocking::get("https://stalewall.vercel.app/api");
+    let api = blocking::get(url);
     match api {
         Ok(res) => {
             let info: Result<Stalewall> = res.json();
@@ -22,8 +29,23 @@ pub fn get_image(path: &String) {
                 Ok(j) => {
                     // Creates the image file
                     let mut file = File::create(path).unwrap();
-                    // Writes the image to file
-                    blocking::get(j.url).unwrap().copy_to(&mut file).unwrap();
+                    // Downloads the image
+                    let webpage = blocking::get(j.url); //.unwrap().copy_to(&mut file).unwrap();
+                    match webpage {
+                        Ok(mut image) => {
+                            // this shouldn't happen and also i'm lazy so i'll do a neater thing later, but for now it's better than just an unwrap
+                            image
+                                .copy_to(&mut file)
+                                .expect("There was an error while copying the image data");
+                        }
+                        Err(e) => {
+                            println!(
+                                "Couldn't download the image.\nCheck your connection and try again, if this issue persists, report it to the api repo's issues ({})\n\nError follows:\n{}",
+                                "https://github.com/spacefall/stalewall-api/issues",
+                                e
+                            );
+                        }
+                    }
                 }
                 Err(e) => {
                     println!(

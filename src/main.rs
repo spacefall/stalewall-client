@@ -1,4 +1,7 @@
-#![cfg_attr(hidewinconsole, windows_subsystem = "windows")] //disable terminal
+#![cfg_attr(
+    all(target_os = "windows", feature = "hidewinconsole",),
+    windows_subsystem = "windows"
+)] //disable terminal
 
 mod net;
 

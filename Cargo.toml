@@ -19,3 +19,6 @@ strip = true
 lto = true
 codegen-units = 1
 opt-level = 3
+
+[features]
+hidewinconsole = [] # hides windows console until i find a better solution

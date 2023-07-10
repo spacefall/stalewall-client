@@ -1,3 +1,5 @@
+#![cfg_attr(hidewinconsole, windows_subsystem = "windows")] //disable terminal
+
 mod net;
 
 use clap::Parser;
@@ -9,7 +11,6 @@ use windows::{
     Storage::{FileAccessMode, StorageFile},
 };
 
-/// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {

@@ -1,24 +1,20 @@
 [package]
 name = "stalewall-client"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ping = "0.4"
 futures = "0.3"
-wallpaper = "3.2"
 serde = { version = "1", features = ["derive"] }
 reqwest = { version = "0.11", features = ["blocking", "json"] }
-windows = { version = "0.48", features = ["System_UserProfile", "Foundation", "Storage", "Storage_Streams"] }
-clap = { version = "4.3.11", features = ["derive"] }
+windows = { version = "0.54", features = ["System_UserProfile", "Foundation", "Storage", "Storage_Streams", "Win32_UI_Shell", "Win32_System_Com"] }
+clap = { version = "4.5", features = ["derive"] }
+online = "4"
+anyhow = "1"
 
 [profile.release]
 strip = true
 lto = true
-codegen-units = 1
 opt-level = 3
-
-[features]
-hidewinconsole = [] # hides windows console until i find a better solution

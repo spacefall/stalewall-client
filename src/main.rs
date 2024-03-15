@@ -1,67 +1,61 @@
-#![cfg_attr(
-    all(target_os = "windows", feature = "hidewinconsole",),
-    windows_subsystem = "windows"
-)] //disable terminal
-
-mod net;
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use clap::Parser;
-use futures::executor::block_on;
-use std::{env, time::Duration};
-use wallpaper;
-use windows::{
-    core::*,
-    Storage::{FileAccessMode, StorageFile},
-};
+use std::env;
+use std::process::exit;
+
+mod bg;
+mod net;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// String of queries to relay to the api (will be simplifed in the future)
-    #[arg(short, long)]
+    /// URL of the api (default: stalewall.vercel.app/api)
+    #[arg(short, value_name = "URL")]
+    url: Option<String>,
+    
+    /// String of queries to relay to the api
+    #[arg(short, value_name = "QUERIES")]
     queries: Option<String>,
+
+    /// Wallpaper position: 0 = Center, 1 = Tile, 2 = Stretch, 3 = Fit, 4 = Fill (default), 5 = Span
+    #[arg(short, value_name = "POS")]
+    pos: Option<u8>,
+
+    /// Don't apply wallpaper to lockscreen
+    #[arg(short)]
+    lockscreen_skip: bool,
+
+    /// Don't apply wallpaper to desktop
+    #[arg(short)]
+    desktop_skip: bool,
 }
+
 fn main() {
     let args = Args::parse();
-    if args.queries.is_some() {
-        println!("Queries: {:?}", args.queries.clone().unwrap());
+    let api_url = args.url.unwrap_or("https://stalewall.vercel.app/api".to_string());
+    let api_query = args.queries.unwrap_or(String::new());
+    let full_url = format!("{api_url}{api_query}");
+    
+    println!("Final URL: {full_url}");
+    
+    if args.desktop_skip && args.lockscreen_skip {
+        println!("Not applying wallpaper, exiting");
+        exit(0);
     }
 
-    // Network check timeout
-    const TIMEOUT: Duration = Duration::new(5, 0);
-
-    // Checks if pc is connected to the internet
-    println!(
-        "Checking for connection to the internet, timeout: {}s",
-        TIMEOUT.as_secs(),
-    );
-    net::check_network(TIMEOUT);
+    // Network check
+    online::check(Some(5)).expect("PC isn't connected to the internet");
 
     // Gets path to %temp%/stalewall_currentwall.jpg
-    let wallpath: String = env::temp_dir()
-        .join("stalewall_currentwall.jpg")
-        .into_os_string()
-        .into_string()
-        .unwrap();
-    println!("Image path: {}", wallpath);
+    let tmppath = env::temp_dir().join("stalewall_currentwall.jpg");
+    // And converts it to &str
+    let wallpath = tmppath.to_str().unwrap();
+    println!("Image path: {wallpath}");
 
-    // Starts image download
     println!("Downloading image");
-    net::get_image(&wallpath, args.queries);
-    println!("Image downloaded");
+    net::dl_image(wallpath, full_url).expect("Couldn't download the image");
 
-    // Applies wallpaper
-    // To desktop
-    println!("Applying desktop wallpaper");
-    wallpaper::set_from_path(&wallpath).unwrap();
-    // To Lockscreen
-    println!("Applying lockscreen wallpaper");
-    block_on(set_lockscreen(wallpath)).unwrap();
-}
-
-async fn set_lockscreen(path: String) -> Result<()> {
-    let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path))?.await?;
-    let stream = file.OpenAsync(FileAccessMode::Read)?.await?;
-    windows::System::UserProfile::LockScreen::SetImageStreamAsync(&stream)?.await?;
-    Ok(())
+    println!("Applying wallpaper");
+    bg::set(!args.desktop_skip, !args.lockscreen_skip, args.pos.unwrap_or(4), wallpath);
 }
